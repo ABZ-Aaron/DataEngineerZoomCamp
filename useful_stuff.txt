@@ -1,0 +1,9 @@
+DOCKER
+
+To create a Docker container, run something like:
+
+docker build -t test:pandas
+
+To run the Docker container:
+
+docker run -it test:pandas
