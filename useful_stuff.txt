@@ -7,3 +7,11 @@ docker build -t test:pandas
 To run the Docker container:
 
 docker run -it test:pandas
+
+To check running containers:
+
+docker ps
+
+To stop a docker contianer:
+
+docker stop <container id>
