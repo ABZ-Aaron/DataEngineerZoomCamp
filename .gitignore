@@ -127,3 +127,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+week_1_basics_n_setup/2_docker_sql/
