@@ -10,7 +10,6 @@ import pandas as pd
 
 from sqlalchemy import create_engine
 
-
 def main(params):
     
     user = params.user 
@@ -40,15 +39,13 @@ def main(params):
     taxi.head(0).to_sql(name = table_name, con = engine, if_exists = 'replace')
     
     taxi.to_sql(name=table_name, con=engine, if_exists='append')
-
-    # Insert actual data for each chuck
+        
     count = 1
-    while True:
-        taxi = next(taxi_iter)
-        taxi.tpep_pickup_datetime = pd.to_datetime(taxi.tpep_pickup_datetime)
-        taxi.tpep_dropoff_datetime = pd.to_datetime(taxi.tpep_dropoff_datetime)
-        taxi.to_sql(name = table_name, con = engine, if_exists = 'append')
-        print(f"Finished Iteration {count}")
+    for i in taxi_iter:
+        i.tpep_pickup_datetime= pd.to_datetime(i.tpep_pickup_datetime)
+        i.tpep_dropoff_datetime= pd.to_datetime(i.tpep_dropoff_datetime)
+        i.to_sql(name = table_name, con = engine, if_exists = 'append')
+        print(f"Completed Iteration {count}")
         count += 1
         
 if __name__ == '__main__':
@@ -64,4 +61,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     main(args)
-    

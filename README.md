@@ -137,13 +137,98 @@ This week we'll be cover basics with the following:
 
   * -p 8080:80 = like with postgres, we set up ports to map pgadmin to our host machine.
 
-10. Once we run both of these in seperate terminals, we have created two containers. To access pgadmin, we can got to `localhost:8080` in our browser, and use the pgadmin details to login. We should also make sure to specify `pg-database-2` as the host name we want to connect to.
+10. Once we run both of these in seperate terminals, we have created two containers. 
 
-11.  Next up, I completed the data ingestion pipeline script, now named `ingest-data` and converted it to a script (instead of a jupyter notebook). 
+ To access pgadmin, we can got to `localhost:8080` in our browser, and use the pgadmin details to login. We should also make sure to specify `pg-database-2` as the host name we want to connect to.
 
-  It's not perfect, but will fix it later. It's written in such a way that, when we run our image to create a container, we can pass it arguments to specify our table name, postgres details, and so.
+11. Next up, I completed the data ingestion pipeline script, now named `ingest-data` and converted it to a python script (instead of a jupyter notebook). 
 
+It's not perfect, but will fix it later. It's written in such a way that, when we run our image to create a container, we can pass it arguments to specify our table name, postgres details, and so. Regarding passwords and usernames, these would typically be set as environmental variables, and loaded in. But we won't worry about that now.
 
+Our Dockerfile is now set to run this ingestion script, as well as install relevant dependencies. 
 
+12. So just a quick review. 
 
+We can stop all of our containers using the below command:
+
+`docker rm $(docker ps --filter status=exited -q)`
+
+This prints the IDs all of containers that have exited, and removes them. 
+
+We can list all ouf our containers using:
+
+`docker ps -a`
+
+We can list the currently running containers using:
+
+`docker ps`
+
+If we want to stop a running container, we use:
+
+`docker stop <containerID>`
+
+We can remove it then using:
+
+`docker rm <containerID>`
+
+Now let's run through some steps.
+
+We run the below to run a postgres 13 container.
+
+```
+docker run -it \
+  -e POSTGRES_USER="root" \
+  -e POSTGRES_PASSWORD="root" \
+  -e POSTGRES_DB="ny_taxi" \
+  -v $(pwd)/ny_taxi_postgres_data:/var/lib/postgresql/data \
+  -p 5431:5432 \
+  --network=pg-network \
+  --name pg-database-2 \
+  postgres:13
+  ```
+
+We can then run the following to run a pgadmin container.
+
+```
+docker run -it \
+  -e PGADMIN_DEFAULT_EMAIL="admin@admin.com" \
+  -e PGADMIN_DEFAULT_PASSWORD="root" \
+  -p 8080:80 \
+  --network=pg-network \
+  --name pgadmin-2 \
+  dpage/pgadmin4
+```
+
+13. We can now create an image using:
+
+`docker build -t taxi_ingest:v001 .`
+
+This build an image from our Dockerfile. We put a `.` at the end to specify the current working directory (where our Dockerfile is located). The `-t` specified we want to add a tag to the name of our image, in this caes, `001`. 
+
+Once we build this, we then have a blueprint for our containers.
+
+14. We can now run the following:
+
+```
+docker run -it  \
+    --network=pg-network \
+    taxi_ingest:v001 \
+      --user=root \
+      --password=root \
+      --host=pg-database-2 \
+      --port=5432 \
+      --db=ny_taxi \
+      --table_name=yellow_taxi_data \
+      --url="https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2021-01.csv"
+```
+
+Here we are running our image to create a container.
+
+We specify `pg-network` to ensure this container will be part of this network. Remember we, specified this earlier when we created our postgres and pgadmin containers. 
+
+We are also passing a number of parameters, such as `user`,  `password`, and the `url` from where data will be downloaded. The python `argparse` programme will read these into the `ingest-data` script.
+
+Now, whenever we run this container, we will end up with a database populated with the CSV data.
+
+15. 
 
