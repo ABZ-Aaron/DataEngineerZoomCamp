@@ -1,17 +1,23 @@
 DOCKER
 
-To create a Docker container, run something like:
+# To create a Docker container, run something like:
 
 docker build -t test:pandas
 
-To run the Docker container:
+# To run the Docker container:
 
 docker run -it test:pandas
 
-To check running containers:
+# To check running containers:
 
 docker ps
 
-To stop a docker contianer:
+# To stop a docker contianer:
 
 docker stop <container id>
+
+PYTHON
+
+# Convert jupyter to script
+
+jupyter nbconvert --to=script upload-data.ipynb  
