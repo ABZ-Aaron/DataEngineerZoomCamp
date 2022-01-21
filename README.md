@@ -39,6 +39,8 @@ This week we'll be cover basics with the following:
 
 ---
 
+### Docker & Postgres
+
 1. Our first task was creating a `Dockerfile` which is used to build our Docker image.
 
   A Dockerfile is a text document. It contains all the commands one could call on the command line to create a Docker image. In other words, Docker can build images automatically by reading instructions from a Dockerfile.
@@ -105,7 +107,11 @@ This week we'll be cover basics with the following:
 
 9. Next I setup `pgadmin`. This is a way for us to interact with our database in a more user friendly, web based graphical interface. I actually have pgadmin installed. But we can also run a docker container of this. We just need to make sure our postgres and pgadmin containers are in the same `network` - and give both of them a name in that network. This ensures that we can connect to our postgres engine, and thus database, from pgadmin.
 
-  Here's how we can amend our `docker run` command for postgres to add it to a network and give it a name. Giving a name to pgadmin isn't too important, but it's important we give postgres a name so we can connect to it from pgadmin.
+  Here's how we can amend our `docker run` command for postgres to add it to a network and give it a name. Giving a name to pgadmin isn't too important, but it's important we give postgres a name so we can connect to it from pgadmin. We first creare the network:
+
+  `docker network create pg-network`
+
+  Then run postgres container:
 
   ```
   docker run -it \
@@ -228,7 +234,88 @@ We specify `pg-network` to ensure this container will be part of this network. R
 
 We are also passing a number of parameters, such as `user`,  `password`, and the `url` from where data will be downloaded. The python `argparse` programme will read these into the `ingest-data` script.
 
-Now, whenever we run this container, we will end up with a database populated with the CSV data.
+Now, whenever we run this container, we will end up with a database populated with the CSV data - which we can then access via pgadmin.
 
-15. 
+15. But... that's all a bit inconvient isn't it. Let's look into simplifying the process. We'll use `docker-compose`. This comes as part of docker desktop, which we already have installed.
 
+16. We'll first create a `YAML` file (YAML is a language typically used for configuration files). 
+
+Here we specify most of same details we specified when we ran the `docker build` commands for pgadmin and postgres database, only in a slightly different format. We don't actually need to specify the network (this will be done automatically). We also use the service name to connect to postgres from pgadmin now, rather than using the name we specified in the `docker build` command.
+
+This is a convient way to create multiple containers from multiple images.
+
+To actually run this file, we use:
+
+`docker-compose up`
+
+To shut down containers, we use the following the working directory we started the previous command:
+
+`docker-compose down`
+
+We can also start the containers in detached mode (this frees up our console, but keeps the container running):
+
+`docker-compose up -d`
+
+### Google Cloud Platform (GCP) & Terraform
+
+Terraform is a infastructure as code tool. It allows us to provision infrasture resources as code, and bypass the GUI of cloud vendors like AWS or GCP.
+
+GCP is a suite of cloud computing services offered by Google. Cloud computing is the on-demand availability of computer system resources without direct active management by the user.
+
+1. The first thing we want to do is setup a free [Google Cloud Platform](https://cloud.google.com) account. You should get around $300 for free when signing up. This is enough for our purposes.
+
+2. Next create a new project. I've called mine `dtc-de`. Switch to the project.
+
+3. Creat a service account. I've called mine `dtc-de-user`
+
+A service account is an identity that a compute instance or application can user to run API requests on our behalf. In other words, it is a user account you create for a service. It allows services to interact with each other.
+
+4. Create key stored in JSON for service account. This will be saved down to our computer. Take a note of where it's stored.
+
+5. Next we want to install Google SDK. This is a CLI tool which we can use to interact with our cloud service. Instructions [here](https://cloud.google.com/sdk/docs/quickstart).
+
+6. I had some issues with the above step. Essentially I ended up setting my global python to system (2.7) using pyenv `pyenv global system` after removing the files that had been placed in my home folder in the previous step. I then followed through the install steps again. In order to continuusly access SDK, I need to make sure I have python 2.7 set. It's not convient, and no doubt there's a better way of doing this. But it'll do for now.
+
+7. Finally, we setup an environmental variable to point to our authentications keys (the json file).
+
+On my mac, I just ran the below:
+
+`echo "GOOGLE_APPLICATION_CREDENTIALS="/Users/aaronwright/google-auth-key/dtc-de-338914-4da1c4a7cb0c.j" >> .zprofile`
+
+I verified the authentication with this:
+
+`gcloud auth application-default login`
+
+Now our local environment is authenticated to work with the cloud environment.
+
+8. Next up, I installed terraform. I have `homebrew` on my mac, so I used the following to install it.
+
+```
+brew tap hashicorp/tap
+brew install hashicorp/tap/terraform
+```
+9. The next step involves assigning roles to our service account.
+
+I had issues here. It seemed that under the IAM tab in GCP, there was a deleted user, but no service account like in the video.
+
+Wasn't able to determine exactly what caused it, and didn't have time to fully understand it, so have made a note to look into this later.
+
+However for the time being, I deleted my entire project, and decided to create a new one with a better name. My new project is `My-DE-Project` with service account `My-DE-Project-User`. Things seems to be working now.
+
+I assigned some roles to my service account from the IAM tab - `Storage Admin` and `Storage Object Admin`. These are for managing buckets and objects within buckets. It's important to note that in a real production environment, we would typically assign customr roles, rather than choosing GCP's default ones.
+
+We also added `Big Query Admin` as a role, as this is something we're going to want to interact with.
+
+10. Let's now enable APIs. 
+
+So when we are interacting with the cloud from our local environment, we don't interact with the resources. Instead, the APIs are the enablers of commmunication. 
+
+We enabled these 2 APIs:
+
+https://console.cloud.google.com/apis/library/iam.googleapis.com
+
+* Manages identity and access control for Google Cloud Platform resources, including the creation of service accounts, which you can use to authenticate to Google and make API calls.
+
+https://console.cloud.google.com/apis/library/iamcredentials.googleapis.com
+
+* Service Account Credentials API allows developers to create short-lived, limited-privilege credentials for their service accounts on GCP.
