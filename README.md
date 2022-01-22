@@ -1,8 +1,10 @@
 # DataEngineerZoomCamp
 
-I'm partaking in a Data Engineering [Bootcamp / Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp). 
+I'm partaking in a Data Engineering [Bootcamp / Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp)!
 
 I'll store my progress here.
+
+I can't promise these notes will be neat and tidy, but I hope they can help anyone who is working through this bootcamp. I'll aim to document any problems or errors I come across during my journey, and describe concepts that I found tricky.
 
 ## The Task 
 
@@ -374,6 +376,7 @@ I also added all the extra files created after `terraform init` to my `.gitignor
 If none of the above works for you, try refreshing the service accounts authentication token with:
 
 `gcloud auth application-default login`
+## Setting up a Cloud VM and SSH Access
 
 16. Now let's set up a cloud VM instance and SSH access.
 

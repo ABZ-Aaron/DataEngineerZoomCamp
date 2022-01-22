@@ -29,12 +29,11 @@ docker run -it \
     --table_name=yellow_taxi_data \
     --url="https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2021-01.csv"
 
-
 docker build -t taxi_ingest:v001 .
 
 docker run -it  \
     --network=2_docker_sql_default \
-    taxi_ingest:v001 \
+    taxi_ingest:v002 \
       --user=root \
       --password=root \
       --host=pgdatabase \
