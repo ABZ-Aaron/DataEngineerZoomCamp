@@ -209,7 +209,7 @@ docker run -it \
 
 `docker build -t taxi_ingest:v001 .`
 
-This build an image from our Dockerfile. We put a `.` at the end to specify the current working directory (where our Dockerfile is located). The `-t` specified we want to add a tag to the name of our image, in this caes, `001`. 
+This build an image from our Dockerfile. We put a `.` at the end to specify the current working directory (where our Dockerfile is located). The `-t` specified we want to add a tag to the name of our image, in this case, `001`. 
 
 Once we build this, we then have a blueprint for our containers.
 
@@ -230,7 +230,7 @@ docker run -it  \
 
 Here we are running our image to create a container.
 
-We specify `pg-network` to ensure this container will be part of this network. Remember we, specified this earlier when we created our postgres and pgadmin containers. 
+We specify `pg-network` to ensure this container will be part of this network. Remember we specified this earlier when we created our postgres and pgadmin containers. 
 
 We are also passing a number of parameters, such as `user`,  `password`, and the `url` from where data will be downloaded. The python `argparse` programme will read these into the `ingest-data` script.
 
@@ -319,3 +319,161 @@ https://console.cloud.google.com/apis/library/iam.googleapis.com
 https://console.cloud.google.com/apis/library/iamcredentials.googleapis.com
 
 * Service Account Credentials API allows developers to create short-lived, limited-privilege credentials for their service accounts on GCP.
+
+11. Next, we'll work with Terraform. 
+
+Terraform allows us to manage infrastructure with config files in source control rather than graphical user interfaces. We can build, change, and destory our infrastructure in a safe, repeatable way by defining resource configurations that we can version, reuse and share.
+
+Here are the steps to take if you want to deploy infrastructure with Terraform:
+
+* Scope - Identify the infrastructure for your project.
+* Author - Write the configuration for your infrastructure.
+* Initialize - Install the plugins Terraform needs to manage the infrastructure.
+* Plan - Preview the changes Terraform will make to match your configuration.
+* Apply - Make the planned changes.
+
+Terraform will track our real infrastructure in a state file. This acts as a source of truth for our environment. 
+
+12. So first of all, I've created a new directory called `1_terraform_gcp`. In here I've created 3 files: `main.tf`, `variables.tf` and `.terraform-version`. I also made sure to install the terraform extension for VS Code, which is the IDE I'm using.
+
+13. Next up, I added the terraform version to the `.terraform-version` file. We can check what version we have installed by running the following in a terminal:
+
+`terraform version`
+
+14. IMPORTANT: Don't add your google authentication information to any files we're working with. If you do, make sure to add it to your .gitignore file so that it isn't tracked.
+
+15. I'm not going to spend too much time understanding terraform at this point, but I do plan on doing some tutorials. There's some info [here](https://github.com/DataTalksClub/data-engineering-zoomcamp/blob/main/week_1_basics_n_setup/1_terraform_gcp/1_terraform_overview.md) on what things are doing in the two terraform files.
+
+What's important is to copy the data from `main.tf` and `variables.tf` from the zoomcampy repo files to our own. 
+
+Then, when in the terraform working directory, we just run the following commands in order. When asked to enter your GCP Project ID, enter it and proess return.
+
+```
+terraform init`
+terraform plan
+terraform apply
+terraform apply
+```
+
+Once complete, we shall have created a BigQuery Data Warehouse and Google Cloud Storage Data Lake in GCP, all from the information provided to `main.tf` and `variables.tf`!
+
+I also added all the extra files created after `terraform init` to my `.gitignore` file as they seemed rather large.
+
+If none of the above works for you, try refreshing the service accounts authentication token with:
+
+`gcloud auth application-default login`
+
+16. Now let's set up a cloud VM instance and SSH access.
+
+17. In GCP, go to Compute Instances > VM Instance. Enable the Compute Engine API if prompted. 
+
+18. We don't currently have any VM instances. Before we create one, we will need to create an SSH key (we'll use this to securly login to the instance)
+
+* Create SSH directory in root folder `mkdir ~/.ssh`
+* In the SSH directory, run the command `ssh-keygen -t rsa -f gpc -C <yourname> -b 2048`
+* Don't bother with passphrases to save us having to always type this in (just hit return on both prompts)
+* If you type `ls` you can now see that two keys have been generated, a public and a private key
+* DO NOT SHOW PRIVATE KEY WITH ANYONE
+* Next, put public key to Google Cloud. Under Compute Engine go to Metadata. Select SSH tab, and add SSH key. Then enter the key fouund within the public key file and save.
+* So now, all VMs we create will have this key
+* Next create a VM instance on the previous screen
+* Give it a name
+* Select a region close by to you
+* I selected the `e2-standard-4` machine type.
+* Scroll down to Boot Desk. I changed this to `ubuntu`, `ubuntu 20.04 LTS` and gave it `30 GB`. 
+* Click select, then click Create.
+
+Now copy the `External IP`, head to your command line and enter the below:
+
+`ssh -i ~/.ssh/gpc <yourname>@<externalip>`
+
+`externalip` is the ip you just copied and `yourname` is the name you gave when ran the `ssh-keygen` command.
+
+Now we're connected to our VM. If your run the `htop` command you can get some details. Run `ctrl + c` to exit. 
+
+Next up, we'll download anaconda on our VM using `wget <link to anaconda linux installation file>`. And then `bash <downloaded file>`. Run through the installation steps.
+
+Now create a file under `~/.ssh` called config. We'll use this for configuring SSH.
+
+In that config file, write the following:
+
+```
+Host de-zoomcamp
+    HostName <exteralip>
+    User <yourname>
+    IdentityFile ~/.ssh/gpc
+```
+You can name it what you want. I just used `de-zoomcamp`. 
+
+Once you've saved this, entering your VM from the command line is as simple as running from your home directory 
+
+`ssh de-zoomcamp`
+
+19. If we want to logout, we can use `ctrl + d`, but stay in it for now.
+
+20. Let's install Docker on our VM now:
+
+We first run:
+
+`sudo apt-get update`
+
+This will fetch the software packages.
+
+Then we run:
+
+`sudo apt-get install docker.io`
+
+21. Next let's configure VS Code to access our VM. 
+
+Install the `Remote - SSH` extension. Then from the command palette search and select Connect tto Host (Remote-SSH) and select de-zoomcamp (this appears because we created the config file earlier)
+
+22. Next up `git clone` the entire zoomcamp github repo to the VM (you are actually best to clone your own zoomcamp repo, assuming you've been following along).
+
+23. In this step, we'll find that we can't run docker on our VM even though it's installed. Permission will be denied.
+
+Let's run some commands which will stop us having to use `sudo` everytime we have to run Docker. They basically add us to a docker group, giving us permissions.
+
+`sudo groupadd docker`
+
+`sudo gpasswd -a $USER docker`
+
+`sudo service docker restart`
+
+We also need to log out and log back in so that group membership is re-evaulated. 
+
+24. Next, let's install `docker-compose`. 
+
+Go to https://github.com/docker/compose/releases/tag/v2.2.3 and find `docker-compose-linux-x86_64`.
+
+Copy link, create folder called `bin` in your VM, change directories into it, and run `wget <the link> -O docker-compose`
+
+This is an executable file, but our system doesn't know this. To let our system know, run this command:
+
+`chmod +x docker-compose`
+
+Now let's make it visible to every directory (not just the bin directory). 
+
+Go back to home folder in VM, and run `nano .bashrc` (nano is a text editor).
+
+Scroll to the bottom, and add bin directory to our path by writing this:
+
+`export PATH="${HOME}/bin:${PATH}"`
+
+This command is basically pre-prending something to the beginning of our PATH variable (not overwriting it).
+
+Save and exit, and run `source .bashrc` to essentially refresh the changes.
+
+Now if you run `which docker-compose` you can see that our system is now able to find it.
+
+Next, try going to the `2_docker_sql` directory and running `docker-compose up` (do you remember what this does from earlier?)
+
+25. With that (hopefully) working, head back to the home directory and install pgcli (the postgres command line utility) using `pip install pgcli`.
+
+You'll find that if you try and use this, you'll get some error (although it'll still work). But there's a workaround. 
+
+First uninstall it with `pip uninstall pgcli`
+
+We'll now use anaconda to install it.
+
+
+
