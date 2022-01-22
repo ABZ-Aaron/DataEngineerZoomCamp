@@ -487,5 +487,7 @@ First uninstall it with `pip uninstall pgcli`
 
 We'll now use anaconda to install it.
 
+Now it's time to do some homework! Note that for this, I've updated my ingestion script to add a second table, and a new image for this using `docker build -t taxi_ingest:v002 .`. Note the only difference here is I've added a `v002` to signify this is an updated version of our original image.
+
 
 

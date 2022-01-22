@@ -33,13 +33,15 @@ docker run -it \
 docker build -t taxi_ingest:v001 .
 
 docker run -it  \
-    --network=pg-network \
+    --network=2_docker_sql_default \
     taxi_ingest:v001 \
       --user=root \
       --password=root \
-      --host=pg-database-2 \
+      --host=pgdatabase \
       --port=5432 \
       --db=ny_taxi \
-      --table_name=yellow_taxi_data \
-      --url="https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2021-01.csv"
+      --table_name_1=yellow_taxi_data \
+      --table_name_2=yellow_taxi_zone_data \
+      --url_1="https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2021-01.csv" \
+      --url_2="https://s3.amazonaws.com/nyc-tlc/misc/taxi+_zone_lookup.csv"
 
