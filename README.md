@@ -155,7 +155,7 @@ Our Dockerfile is now set to run this ingestion script, as well as install relev
 
 12. So just a quick review. 
 
-We can stop all of our containers using the below command:
+We can stop all of our containers using the below command. I've found that issues can come about when you don't remove containers that have been stopped. If you've stopped containers, and don't need them anymore, run the below.
 
 `docker rm $(docker ps --filter status=exited -q)`
 
@@ -217,11 +217,11 @@ Once we build this, we then have a blueprint for our containers.
 
 ```
 docker run -it  \
-    --network=pg-network \
+    --network=2_docker_sql_default \
     taxi_ingest:v001 \
       --user=root \
       --password=root \
-      --host=pg-database-2 \
+      --host=pgdatabase \
       --port=5432 \
       --db=ny_taxi \
       --table_name=yellow_taxi_data \
@@ -230,9 +230,21 @@ docker run -it  \
 
 Here we are running our image to create a container.
 
-We specify `pg-network` to ensure this container will be part of this network. Remember we specified this earlier when we created our postgres and pgadmin containers. 
+I actually made an error here in an earlier commit, something I didn't realise until I'd started a new session the following day. I said:
 
-We are also passing a number of parameters, such as `user`,  `password`, and the `url` from where data will be downloaded. The python `argparse` programme will read these into the `ingest-data` script.
+`We specify pg-network to ensure this container will be part of this network. Remember we specified this earlier when we created our postgres and pgadmin containers.`
+
+I don't think this is right. When we run `docker-compose` - the two services we specified in the `YAML` file are added as part of the same network, which is given a default name by Docker (we can specify the network name but we haven't in our example). The `pg-network` should be irrelevant at this point. So we actually need to find the default network created. To do this run:
+
+`docker network ls` 
+
+This prints all running networks. You should see one that represents the shared network for our pgadmin and postgres database engine containers. In my case, it was `2_docker_sql_defaults` - which you can see I've added to the long command above. 
+
+We also need to replace the `host` with `pgdatabase` which is what we specified in the `YAML` file as well.
+
+It should all work fine then.
+
+We are also passing a number of other parameters, such as `user`,  `password`, and the `url` from where data will be downloaded. The python `argparse` programme will read these into the `ingest-data` script.
 
 Now, whenever we run this container, we will end up with a database populated with the CSV data - which we can then access via pgadmin.
 
@@ -474,98 +486,6 @@ You'll find that if you try and use this, you'll get some error (although it'll 
 First uninstall it with `pip uninstall pgcli`
 
 We'll now use anaconda to install it.
-
-But first... got back to the VS Code instance you had open, where you were connected to the VM. Go to open folder, and select the ZoomCampFolder. This is you now working on your VM!
-
-26. Now install pgcli with `conda install -c conda-forge pgcli`
-
-27. Next, install mycli using `pip install -U mycli`. Not sure why we're doing this, but it'll fix some potential issues with pgcli.
-
-28. You can test connection to your database using something like (you should have run `docker-compose up` before this)
-
-`pgcli -h localhost -U root -p 5431 -d ny_taxi` 
-
-It'll probably be different from you. This was from a previous step. I had to specify port 5431 as port 5432 on my machine was in use. Make sure. 
-
-Just another issue to note, I tried running `dockder ps` and got a permission denied error. I tried running through the steps earlier (adding myself to the docker group again) but didn't help. Instead I ran this:
-
-`sudo chmod 666 /var/run/docker.sock`
-
-This seemed to resolve it. As far as I can tell, this allows all user to read and write the file/folder.
-
-29. If we want to stop our docker containers, we can run `docker-compose down` from the `2_docker_sql`. But let's keep them running for now.
-
-TIP: use `docker-compose up -d` to start our containers and gain control back of our terminal, while it operates in the background.
-
-30. What if we want to interact with our postgres instance locally? Well we can forward the port to our local machine.
-
-In VS Code, go to the `PORTS` tab (next to `TERMINAL`). Click forward the port. It's probably 5432 for you. 
-
-Once that's done, open up a terminal on your local machine and execute the same `pgcli` command from earlier. We can then do the same for the `8080` port.
-
-We can also do this for Jupyter Notebook. Just run `jupyter notebook` in the terminal of our VM in VS Code. Add `8888` port on port tab. We can then use the link show in the termaial to access Jupyter from our local machine. 
-
-31. Next, lets install Terraform. Go to Terraform download page and copy link of `Amd64` binary, navigate to `~/bin` directory, and run:
-
-`wget https://releases.hashicorp.com/terraform/1.1.4/terraform_1.1.4_linux_amd64.zip`
-
-This will create a zip archive so we'll need to unzip it. 
-
-First install the zip utility:
-
-`sudo apt-get install unzip`
-
-Then unzip the zip file`
-
-`unzip <zipfile>`
-
-and remove the zip file:
-
-`rm *.zip`
-
-Now, because `~/bin` is already discoverable, we can do stuff with Terraform from anywhere.
-
-32. Before we do antyhing else, do you remember that JSON file containing your authentication key? Let's copy it to our VM.
-
-We'll use `sftp` which stands for SSH File Transfer Protocol. This will let us securely send this file to our VM.
-
-We can connect directly to our VM using:
-
-`sftp de-zoomcamp`
-
-Run this from your local machine.
-
-Once connected, create a new directory:
-
-`mkdir .gc`
-
-Then `put` our JSON file there:
-
-`put <localfullpathtoJSON>`
-
-33. Next run, 
-
-`export GOOGLE_APPLICATION_CREDENTIALS=~/.gc/silent-oasis-338916-c6db57413a85.json`
-
-then:
-
-`gcloud auth activate-service-account --key-file $GOOGLE_APPLICATION_CREDENTIALS`
-
-I still need to understand this, but essentially what we've done is activated our service account credentials.
-
-34. Let's now run through the terraform init stuff from earlier, remember?
-
-`terraform init`
-`terraform plan`
-`terraform apply`
-
-I actually got an error here. Something I'll need to look into a bit later. 
-
-35. What if I want to shut down my VM? Just run `sudo shudown now` from the terminal. We can also do this from the GUI in GCP. 
-
-We can start it again from here too. Once started, we need the external ip. We then need to go into our `~/ssh/config` file and replace the hostname there with the new ip.
-
-We then run `ssh de-zoomcamp` again to connect to our vm.
 
 
 
