@@ -190,11 +190,11 @@ Once we build this, we then have a blueprint for our containers.
 
 ```
 docker run -it  \
-    --network=2_docker_sql_default \
+    --network=pg-network \
     taxi_ingest:v001 \
       --user=root \
       --password=root \
-      --host=pgdatabase \
+      --host=pg-database-2 \
       --port=5432 \
       --db=ny_taxi \
       --table_name=yellow_taxi_data \
@@ -202,20 +202,6 @@ docker run -it  \
 ```
 
 Here we are running our image to create a container.
-
-I actually made an error here in an earlier commit, something I didn't realise until I'd started a new session the following day. I said:
-
-`We specify pg-network to ensure this container will be part of this network. Remember we specified this earlier when we created our postgres and pgadmin containers.`
-
-I don't think this is right. When we run `docker-compose` - the two services we specified in the `YAML` file are added as part of the same network, which is given a default name by Docker (we can specify the network name but we haven't in our example). The `pg-network` should be irrelevant at this point. So we actually need to find the default network created. To do this run:
-
-`docker network ls` 
-
-This prints all running networks. You should see one that represents the shared network for our pgadmin and postgres database engine containers. In my case, it was `2_docker_sql_defaults` - which you can see I've added to the long command above. 
-
-We also need to replace the `host` with `pgdatabase` which is what we specified in the `YAML` file as well.
-
-It should all work fine then.
 
 We are also passing a number of other parameters, such as `user`,  `password`, and the `url` from where data will be downloaded. The python `argparse` programme will read these into the `ingest-data` script.
 
@@ -240,6 +226,35 @@ To shut down containers, we use the following the working directory we started t
 We can also start the containers in detached mode (this frees up our console, but keeps the container running):
 
 `docker-compose up -d`
+
+I actually made an error here in an earlier commit, something I didn't realise until I'd started a new session the following day. I said:
+
+`We specify pg-network to ensure this container will be part of this network. Remember we specified this earlier when we created our postgres and pgadmin containers.`
+
+I don't think this is right. When we run `docker-compose` - the two services we specified in the `YAML` file are added as part of the same network, which is given a default name by Docker (we can specify the network name but we haven't in our example). The `pg-network` should be irrelevant at this point. So we actually need to find the default network created. To do this run:
+
+`docker network ls` 
+
+This prints all running networks. You should see one that represents the shared network for our pgadmin and postgres database engine containers. In my case, it was `2_docker_sql_defaults` - which you can see I've added to the long command above. 
+
+We also need to replace the `host` with `pgdatabase` which is what we specified in the `YAML` file as well.
+
+So the new command we run (after running `docker-compose up`) would be something like:
+
+```
+docker run -it  \
+    --network=<default network created> \
+    taxi_ingest:v001 \
+      --user=root \
+      --password=root \
+      --host=pgdatabase \
+      --port=5432 \
+      --db=ny_taxi \
+      --table_name=yellow_taxi_data \
+      --url="https://s3.amazonaws.com/nyc-tlc/trip+data/yellow_tripdata_2021-01.csv"
+```
+
+It should all work fine then.
 
 ### Google Cloud Platform (GCP) & Terraform
 
