@@ -39,12 +39,15 @@ A data pipelines can be generally defined as sript(s) that take in data, do some
 
 <img src="https://github.com/ABZ-Aaron/DataEngineerZoomCamp/blob/master/images/pipeline.png" width=100% height=40%>
 
+[source](https://youtu.be/0yK7LXwYeD0)
+
 This week we will work on a slightly more complex pipeline. This will involve extracting data from the web with `wget` or something else to produce a CSV which we store locally. We will convert this CSV to a more effective format - parquet. We'll take this file and upload to Google Cloud Storage (data lake). We will then copy this to Google Biq Query (data warehouse).
 
 We need to make sure we run these in the right order. 
 
 <img src="https://github.com/ABZ-Aaron/DataEngineerZoomCamp/blob/master/images/workflow.png" width=100% height=40%>
 
+[source](https://youtu.be/0yK7LXwYeD0)
 
 This is called a data workflow, or sometimes known as a DAG (directed acyclic graph). The edges are the dependencies. So for example, parquet depends on the the `wget` stage. An example of the above with a cycle could be if we re-run the `wget` stage after uploading to GCS.
 
