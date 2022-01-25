@@ -15,15 +15,15 @@ WHERE EXTRACT(MONTH FROM tpep_pickup_datetime) = 1);
 -- QUESTION 5
 -- What was the most popular destination for passengers picked up in central park on January 14? 
 -- Enter the zone name (not id). If the zone name is unknown (missing), write "Unknown"
-SELECT dol."Zone" drop_off_zone,
-		COUNT(*) total
+SELECT dol."Zone" drop_off_zone
 FROM yellow_taxi_data ytd
 JOIN yellow_taxi_zone_data pul ON pul."LocationID" = ytd."PULocationID"
 JOIN yellow_taxi_zone_data dol ON dol."LocationID" = ytd."DOLocationID"
 WHERE LOWER(pul."Zone") = LOWER('central park') AND
 	   CAST(tpep_pickup_datetime AS DATE) = '2021-01-14'
 GROUP BY dol."Zone"
-ORDER BY total DESC;
+ORDER BY COUNT(*)  DESC
+LIMIT 1;
 
 -- QUESTION 6
 -- What's the pickup-dropoff pair with the largest average price for a ride 
@@ -31,10 +31,13 @@ ORDER BY total DESC;
 -- For example:"Jamaica Bay / Clinton East". If any of the zone names are unknown (missing), 
 -- write "Unknown". For example, "Unknown / Clinton East".
 SELECT AVG(total_amount) total, 
-		pul."Zone" pick_up_zone, 
-		dol."Zone" drop_off_zone
+		CONCAT(
+			CASE WHEN pul."Zone" IS NULL THEN 'Unknown' ELSE pul."Zone" END,
+	    	' / ', 
+			CASE WHEN dol."Zone" IS NULL THEN 'Unknown' ELSE dol."Zone" END)
 FROM yellow_taxi_data ytd
 JOIN yellow_taxi_zone_data pul ON pul."LocationID" = ytd."PULocationID"
 JOIN yellow_taxi_zone_data dol ON dol."LocationID" = ytd."DOLocationID"
 GROUP BY pul."Zone", dol."Zone"
-ORDER BY total DESC;
+ORDER BY total DESC
+LIMIT 1;
