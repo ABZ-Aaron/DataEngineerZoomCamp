@@ -29,7 +29,9 @@ We'll use a range of tools:
 
 ## Progress
 
-* [Week1](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_1_basics_n_setup) - PostgreSQL | Terraform | Docker | Google Cloud Platform
+* [Week1](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_1_basics_n_setup)
+
+  *PostgreSQL | Terraform | Docker | Google Cloud Platform*
 
   This week was a lot of setup, and a lot of work! Here I was introduced to Docker - a framework for managing containers. I created some containers for PostgreSQL and PgAdmin, before finally creating my own image, which when run, created and populated tables within my PostgreSQL database.
   
@@ -41,7 +43,7 @@ We'll use a range of tools:
   
 * [Week 2](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_2_data_ingestion)
 
-This week I'm learning about Airflow!
+  This week I'm learning about Airflow!
 
 * Week 3: Pending...
 * Week 4: Pending...
