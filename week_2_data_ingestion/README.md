@@ -72,9 +72,20 @@ Here's the general architecture:
 [source](https://github.com/DataTalksClub/data-engineering-zoomcamp/blob/main/week_2_data_ingestion/airflow/2_concepts.md)
 
 * `Web Server` - GUI to inspect, trigger and debug behaviour of DAGS. Available at http://localhost:8080.
+
+    The home page of the web server shows us a list of DAGs. The DAGs properties can be seen here (where the source file resides, tags, descriptions, and so on). The DAGs can also easily be paused here, which will then ignore any schedules you may have set. You can see the names of the DAGs, the schedule that they run on (in [CRON](https://crontab.guru/#5_4_8_*_*) format), the owner of the DAG, recent tasks, a timestamp of the last run of the DAG, summary of previous DAGs run, and so on.
+
+    You can also view the DAG as a graph, after going to the DAG detail page. We can also view the code behind the DAG here as well.
+
 * `Scheduler` - Responsible for scheduling jobs.
+
+    This constantly monitors DAGs and taks and running any that are scheduled to run and have had their dependencies met.
+
 * `Worker` - Executes the tasks given by scheduler.
 * `MetaData Database` - Backend to Airflow. Used by scheduler and executeor and webserver to store data.
+
+    This contains all the metadata related to the execution history of each task and DAG as well as airflow configuration. I believe the default in SQLite, but can easily be configured to PostgreSQL or some other database system. The database is created when we initialise using `airflow-init`. Information in this database includes task history.
+
 * `redis` - Forwards messages from scheduler to worker
 * `flower`- Flower app for monitoring the environment. Available at http://localhost:5555.
 * `airflow-inti` - Initialises service
@@ -89,9 +100,11 @@ Once we define a DAG, the following needs to happen in order for a single set of
 
 2. The `Scheduler` reads from the `Metadata Database` to check the status of each tasks and decide what needs done.
 
-3. The `Executor` works with the `Scheduler` to determine what resources will complete those tasks as they're queued. 
+3. The `Executor` works with the `Scheduler` to determine what resources will complete those tasks as they're queued. In other words, it runs tasks taht the `Scheduler` determines are ready to run. The SequentialExecutor is the default. This can only run one task at a time, and is not meant for production. It's really just for testing simple DAGs. However, it's the only one that is currently compatible with SQLite. We're using PostgreSQL, and we want to run more complex DAGs, wo we're going with `CeleryExecutor` which is built for horizontal scaling, or distributed computing. This works with pools of independent `workders` across which it can delegate tasks.
 
-One such `Executor` is `CeleryExecutor` which is built for horizontal scaling, or distributed computing. This works with pools of independent `workders` across which it can delegate tasks.
+### Additional Terminology
+
+* `Operators` - Each task implements an **operator**. These are what actually execute scripts, commands, and so on. These include `PythonOperator`, `BashOperator` and `PostgresOperator`. These are assigned to each task/node in a DAG.
 
 ### Running Airflow with Docker
 
@@ -132,7 +145,7 @@ Some workflow components:
 
 `none` > `scheduled` > `queued` > `running` > `success`
 
-### Prerequisites for Week 2
+### Prerequisites for Airflow & Week 2
 
 Here is some initial setup required for week 2 of this zoomcamp:
 
@@ -171,6 +184,101 @@ echo -e "AIRFLOW_UID=$(id -u)" > .env
 9. In Docker Compose YAML file, under `x-airflow-common`, remove the image tag to replace with our build from the Dockerfile. Mount `google_credentials` in `volumes` section as read-only. Set environment variables `GOOGLE_APPLICATION_CREDENTIALS` AND `AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT`. Change `AIRFLOW__CORE__LOAD_EXAMPLES` to false
 
 For the last steps, you can copy the `Dockerfile` and `docker-compose.yml` from the [zoomcamp repo](https://github.com/DataTalksClub/data-engineering-zoomcamp/tree/main/week_2_data_ingestion/airflow).
+
+## Running Airflow
+
+1. With the pre-requisites out of the way, we now need to build the docker image (we run this the first time, and any time we update our `Dockerfile`).
+
+```bash
+docker-compose build
+```
+
+2. Initialise the Airflow scheduler, database, and other configurations
+
+```bash
+docker-compose up airflow-init
+```
+
+3. Kick off all services
+
+```bash
+docker-compose up
+```
+
+This might take a bit of time. 
+
+4. Once complete, navigate to `localhost:8080` and input our default credentials. These are `airflow / airflow`.
+
+5. We can close our containers using:
+
+```bash
+docker-compose down
+```
+
+### Simple Tutorial
+
+*This is a tutorial taken from [Data Pipelines Pocket Reference](https://www.amazon.co.uk/Data-Pipelines-Pocket-Reference-Processing/dp/1492087831)*
+
+Remember, DAGs are defined in Python scripts - where its structure and dependences are defined. 
+
+1. First, in your `airflow/dags` folder, create a python file called `simple_dag.py` and populate it with the following:
+
+    ```python
+    from datetime import timedelta
+    from airflow import DAG 
+    from airflow.operators.bash_operator import BashOperator
+    from airflow.utils.dates import days_ago
+
+    dag = DAG(
+        'simple_dag',
+        description = 'A Simple DAG',
+        schedule_interval = timedelta(days = 1),
+        start_date = days_ago(1),
+    )
+
+    t1 = BashOperator(
+        task_id = 'print_date',
+        bash_command = 'date',
+        dag = dag,
+    )
+
+    t2 = BashOperator(
+        task_id = 'sleep',
+        depends_on_past = False,
+        bash_command = 'sleep 3',
+        dag = dag,
+    )
+
+    t3 = BashOperator(task_id = 'print_end', depends_on_past = False, bash_command = 'echo \'end\'', dag = dag)
+
+    t1 >> t2
+    t2 >> t3
+    ```
+
+
+    Airflow will scan this folder periodically for DAG files, which you will then see in the Airflow Webserver UI. You may have to give it a few mins, or restart your webserver.
+
+    You can see it's just a typical python script with imports and so on. The first block of code is where we've defined a DAG called `simple_dag`. We've given it a schedule and start date. 
+
+    Next, three tasks have been defined all of type `BashOperator`. This means that when they are executed, they will run a bash command. 
+
+    The last two lines define dependencies. Here we can see that when `t1` completes, `t2` starts. And when `t2` completes, `t3` starts. 
+
+2. At this point. I'd recommend looking at the web UI for Airflow and playing around with it. Click on the DAG, see what the tree and graph look like, see the code you just wrote in the UI itself, and so on. Get familiar with it.
+
+3. Next, flip the toggle on the DAG page, or in the detailed view of the DAG, to turn it on. In the code, we used `tiemdelta(days =1)`. This basically means the DAG will run once a day at midnight. We can see this schedule on the home (DAG) page, and on the DAG detail page, calendar etc. In this example, start_date was set one day prior, meaning that as soon as it's enabled, it would run. 
+
+4. If you go to Browse > DAG Runs, you can see a visual status of the DAG run. By the time you've read this and checked, it will liked say `success`. If you want to run the DAG manually, you can do so from the DAG detail page (look for a play like symbol. You can also delete the DAG here).
+
+5. Now, this DAG doesn't exactly do a lot. It just runs a couple bash commands. If you want to see what was printed from the bash commands, you can actually view this in the logs. This can be useful to troubleshoot and make sure that the commands worked as expected. You can check your log by going to the DAG detail view. Then clicking on one of the graph nodes on the `Graph` tab (e.g. print_date). From there, click on `Log`. If you scroll to the bottom of the log, you should see the output of the command under where it says `Output`. You'll also see `Command exited with return code 0`. This is good. Any value differenrt that 0 means there was an error. 
+
+6. Now just play around. To create a more complex DAG, it might use bash commands to execute a couple of python scripts. Those python scripts might extract CSV data from a website, then send that data to a databsae, or a bucket in the cloud. When these tasks complete, you could have the next task be to load that data into a data warehouse somewhere. 
+
+    But why use `BashOperator` to execute python code insteaad of `PythonOperator`? Arguably, it's easier to maintain logic across the data infrastructure. If you use the `PythonOperator` the code must be written in the DAG definition file or imported into it. This means there's not much seperation between the actual orchestration and the logic of the process it executes. It also helps us avoid issues with incompatible versinos of python libraries and airflow. But... you can use `PythonOperator` if you want.
+
+7. What if we ant to setup Alerts and Notifications? We don't necessarily want to be logging into the Airflow Webserver all the time to check stuff. We can instead have airflow send us or someone else an email when there's been a success or failure. This invovles providing SMTP server details to the airflow.cfg file, so I won't do this right now. Just know that it's possible. It really just a case of adding a bit more code to the DAG python file. 
+
+    That's all for now. There's a lot more to cover, but hopefully this helps!
 
 ## Moving files from AWS to GPC with Transfer Service
 
