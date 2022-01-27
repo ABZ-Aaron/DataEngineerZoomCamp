@@ -310,7 +310,7 @@ Remember, DAGs are defined in Python scripts - where its structure and dependenc
 
 ### Ingesting Data to GCP with Airflow
 
-To get started, create a couple of DAGs (Py files) and store in the `dags` folder.
+To get started, create a DAG (Py file) and store in the `dags` folder.
 
 In the GCS python file, be sure to amend this line if necessary:
 
@@ -318,7 +318,7 @@ In the GCS python file, be sure to amend this line if necessary:
 
 You may not need to change anything. But `trips_data_all` should represent the name of your big query dataset, which you will find in the `variables` file we defined in week 1 under the `terraform` folder.
 
-I've commented the below files to try explain things:
+I've commented the below file to try explain things:
 
 ```python
 # data_ingestion_gcs_dag.py
@@ -449,7 +449,7 @@ with DAG(
     download_dataset_task >> format_to_parquet_task >> local_to_gcs_task >> bigquery_external_table_task
 ```
 
-For the above file, you'll see it in Airflow. Try running it. Basically, it will download our dataset, convert it to parquet format, upload the data to our GCP storage bucket, then, using the schema from that using the schema of that bucket, extract the schema over to BigQuery.
+For the above file, you'll see it in Airflow. Try running it. Basically, it will download our dataset, convert it to parquet format, upload the data to our GCP storage bucket, then transferring that to BigQuery.
 
 ---
 
@@ -457,57 +457,6 @@ For the above file, you'll see it in Airflow. Try running it. Basically, it will
 
 I Haven't worked this out yet, but I was getting issues with the last two tasks. I checked the log files and identified the problem - although I don't know how it came about. I appeared that my Service Account in GCP didn't have the right Roles assigned (remember the ones we assigned in Week 1). I went back into GCP and assigned these. After that, it all worked fine. Still need to investigate what's going on here.
 
----
-
-On to the next file...
-
-```python
-# data_ingestion_localDB_dag.py
-
-import os
-from datetime import datetime
-
-from airflow import DAG
-from airflow.utils.dates import days_ago
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
-
-path_to_local_file = os.environ.get("AIRFLOW_HOME", "/opt/airflow/")
-dataset_file = "yellow_tripdata_2021-01.csv"
-dataset_url = f"https://s3.amazonaws.com/nyc-tlc/trip+data/{dataset_file}"
-
-default_args = {
-    "owner": "airflow",
-    "start_date": days_ago(1),
-    "depends_on_past": False,
-    "retries": 1,
-}
-
-with DAG(
-    dag_id="data_ingestion_localDB_dag",
-    schedule_interval="@daily",
-    default_args=default_args,
-    catchup=True,
-    max_active_runs=1,
-) as dag:
-
-    download_unzip_task = BashOperator(
-        task_id="download_unzip_task",
-        bash_command=f"curl -sS {dataset_url} > {path_to_local_file}/{dataset_file}"    # "&& unzip {zip_file} && rm {zip_file}"
-    )
-    #
-    # upload_to_postgres_task = PythonOperator(
-    #     task_id="upload_to_postgres_task",
-    #     python_callable=,
-    #     op_kwargs={
-    #         "source_file": f"{path_to_local_file}/{dataset_file}",
-    #         "target_file": f"raw/{{ execution_date.year }}/{{ execution_date.month }}/{dataset_file}",
-    #     },
-    # )
-    #
-    # download_unzip_task >> upload_to_gcs_task
-    #
-```
 ## Moving files from AWS to GPC with Transfer Service
 
 `Google Transfer Service` allows us to pull data from a variety of different sources to our Google Cloud Storage, and move data between these. 
