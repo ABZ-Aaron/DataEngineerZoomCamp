@@ -82,7 +82,7 @@ Here's the general architecture:
     This constantly monitors DAGs and taks and running any that are scheduled to run and have had their dependencies met.
 
 * `Worker` - Executes the tasks given by scheduler.
-* `MetaData Database` - Backend to Airflow. Used by scheduler and executeor and webserver to store data.
+* `MetaData Database` - Backend to Airflow. Used by scheduler and executor and webserver to store data.
 
     This contains all the metadata related to the execution history of each task and DAG as well as airflow configuration. I believe the default in SQLite, but can easily be configured to PostgreSQL or some other database system. The database is created when we initialise using `airflow-init`. Information in this database includes task history.
 
@@ -179,11 +179,36 @@ echo -e "AIRFLOW_UID=$(id -u)" > .env
 
 7. If you want to run Airflow locally, we might want to use an extended image with additional dependencies such as python packages. 
 
-8. Create a `Dockerfile` pointing to Airflow version we've just downloaded (e.g. apache/airflow:2.2.3). In the `Dockerfile` add custom packages to be installed - `glcoud`. This will allow us to connect with the GCS bucket/data lake. Also integrate `requirements.txt` which will be used to install libraries via `pip install`.
+8. Create a `Dockerfile` pointing to Airflow version we've just downloaded (e.g. apache/airflow:2.2.3). In the `Dockerfile` add custom packages to be installed - `glcoud`. This will allow us to connect with the GCS bucket/data lake. Also integrate `requirements.txt` which will be used to install libraries via `pip install`. Here we specify `apache-airflow-providers-google`. This is a google specific client for airflow. We also specified `pyarrow`. This is used for conversion of our data to parquet packets.
 
 9. In Docker Compose YAML file, under `x-airflow-common`, remove the image tag to replace with our build from the Dockerfile. Mount `google_credentials` in `volumes` section as read-only. Set environment variables `GOOGLE_APPLICATION_CREDENTIALS` AND `AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT`. Change `AIRFLOW__CORE__LOAD_EXAMPLES` to false
 
 For the last steps, you can copy the `Dockerfile` and `docker-compose.yml` from the [zoomcamp repo](https://github.com/DataTalksClub/data-engineering-zoomcamp/tree/main/week_2_data_ingestion/airflow).
+
+In the `docker-compose.yml` file, be sure to put the correct details into these two variables:
+
+```bash
+GCP_PROJECT_ID: "<GCP Project ID>"
+GCP_GCS_BUCKET: "<ID of Bucket Created in GCP>"
+```
+
+10. Some additional points.
+
+In the `docker-compose.yaml` file, this was added:
+
+```bash
+  build:
+    context: .
+    dockerfile: ./Dockerfile
+```
+
+This replaced the following:
+
+```bash
+image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.2.3}
+```
+
+For our Airflow environment to interact with the Google Cloud Platform environment, we need to build a custom `Dockerfile` and use the base image found in the docker-compose file (removing the base image from the docker-compose file). Then install all the related GCP requirements. This will install `gcloud` and sets it into our path, as well as a few other things.
 
 ## Running Airflow
 
@@ -193,7 +218,9 @@ For the last steps, you can copy the `Dockerfile` and `docker-compose.yml` from 
 docker-compose build
 ```
 
-2. Initialise the Airflow scheduler, database, and other configurations
+From my understanding, this will read our `docker-compose.yaml` file, looks for all services containing `build:` and run `docker build` on them. In our case, this is just our `Dockerfile`.
+
+2. Initialise the Airflow scheduler, database, and other configurations.
 
 ```bash
 docker-compose up airflow-init
@@ -280,6 +307,207 @@ Remember, DAGs are defined in Python scripts - where its structure and dependenc
 
     That's all for now. There's a lot more to cover, but hopefully this helps!
 
+
+### Ingesting Data to GCP with Airflow
+
+To get started, create a couple of DAGs (Py files) and store in the `dags` folder.
+
+In the GCS python file, be sure to amend this line if necessary:
+
+`BIGQUERY_DATASET = os.environ.get("BIGQUERY_DATASET", 'trips_data_all"')`
+
+You may not need to change anything. But `trips_data_all` should represent the name of your big query dataset, which you will find in the `variables` file we defined in week 1 under the `terraform` folder.
+
+I've commented the below files to try explain things:
+
+```python
+# data_ingestion_gcs_dag.py
+
+import os
+import logging
+
+from airflow import DAG
+from airflow.utils.dates import days_ago
+
+# Import our operators
+from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
+
+# We installed the following from the requirements file which was specified in the Dockerfile.
+
+# Helps to interact with Google Storage
+from google.cloud import storage
+
+# Helps interact with BigQuery
+from airflow.providers.google.cloud.operators.bigquery import BigQueryCreateExternalTableOperator
+
+# Helps convert our data to parquet format
+import pyarrow.csv as pv
+import pyarrow.parquet as pq
+
+# Set some local variables based on environmental varaibles we specified in docker-compose.yaml
+PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
+BUCKET = os.environ.get("GCP_GCS_BUCKET")
+
+# Specify our dataset
+dataset_file = "yellow_tripdata_2021-01.csv"
+dataset_url = f"https://s3.amazonaws.com/nyc-tlc/trip+data/{dataset_file}"
+
+# Store environmental variables (in your docker container) locally. The second argument of each `.get` is what it will default to if it's empty.
+path_to_local_home = os.environ.get("AIRFLOW_HOME", "/opt/airflow/")
+BIGQUERY_DATASET = os.environ.get("BIGQUERY_DATASET", 'trips_data_all')
+
+# Replace CSV with Parquet on our file
+parquet_file = dataset_file.replace('.csv', '.parquet')
+
+def format_to_parquet(src_file):
+    """Takes our source file and converts it to parquet"""
+    if not src_file.endswith('.csv'):
+        logging.error("Can only accept source files in CSV format, for the moment")
+        return
+    table = pv.read_csv(src_file)
+    pq.write_table(table, src_file.replace('.csv', '.parquet'))
+
+
+# NOTE: takes 20 mins, at an upload speed of 800kbps. Faster if your internet has a better upload speed
+def upload_to_gcs(bucket, object_name, local_file):
+    """
+    Ref: https://cloud.google.com/storage/docs/uploading-objects#storage-upload-object-python
+    :param bucket: GCS bucket name
+    :param object_name: target path & file-name
+    :param local_file: source path & file-name
+    :return:
+    """
+    # WORKAROUND to prevent timeout for files > 6 MB on 800 kbps upload speed.
+    # (Ref: https://github.com/googleapis/python-storage/issues/74)
+    storage.blob._MAX_MULTIPART_SIZE = 5 * 1024 * 1024  # 5 MB
+    storage.blob._DEFAULT_CHUNKSIZE = 5 * 1024 * 1024  # 5 MB
+    # End of Workaround
+
+    client = storage.Client()
+    bucket = client.bucket(bucket)
+
+    blob = bucket.blob(object_name)
+    blob.upload_from_filename(local_file)
+
+default_args = {
+    "owner": "airflow",
+    "start_date": days_ago(1),
+    "depends_on_past": False,
+    "retries": 1,
+}
+
+# NOTE: DAG declaration - using a Context Manager (an implicit way)
+with DAG(
+    dag_id="data_ingestion_gcs_dag",
+    schedule_interval="@daily",
+    default_args=default_args,
+    catchup=False,
+    max_active_runs=1,
+    tags=['dtc-de'],
+) as dag:
+
+    download_dataset_task = BashOperator(
+        task_id="download_dataset_task",
+        bash_command=f"curl -sS {dataset_url} > {path_to_local_home}/{dataset_file}"
+    )
+
+    format_to_parquet_task = PythonOperator(
+        task_id="format_to_parquet_task",
+        python_callable=format_to_parquet,
+        op_kwargs={
+            "src_file": f"{path_to_local_home}/{dataset_file}",
+        },
+    )
+
+    # TODO: Homework - research and try XCOM to communicate output values between 2 tasks/operators
+    local_to_gcs_task = PythonOperator(
+        task_id="local_to_gcs_task",
+        python_callable=upload_to_gcs,
+        op_kwargs={
+            "bucket": BUCKET,
+            "object_name": f"raw/{parquet_file}",
+            "local_file": f"{path_to_local_home}/{parquet_file}",
+        },
+    )
+
+    bigquery_external_table_task = BigQueryCreateExternalTableOperator(
+        task_id="bigquery_external_table_task",
+        table_resource={
+            "tableReference": {
+                "projectId": PROJECT_ID,
+                "datasetId": BIGQUERY_DATASET,
+                "tableId": "external_table",
+            },
+            "externalDataConfiguration": {
+                "sourceFormat": "PARQUET",
+                "sourceUris": [f"gs://{BUCKET}/raw/{parquet_file}"],
+            },
+        },
+    )
+
+    download_dataset_task >> format_to_parquet_task >> local_to_gcs_task >> bigquery_external_table_task
+```
+
+For the above file, you'll see it in Airflow. Try running it. Basically, it will download our dataset, convert it to parquet format, upload the data to our GCP storage bucket, then, using the schema from that using the schema of that bucket, extract the schema over to BigQuery.
+
+---
+
+**ISSUES / PROBLEMS**
+
+I Haven't worked this out yet, but I was getting issues with the last two tasks. I checked the log files and identified the problem - although I don't know how it came about. I appeared that my Service Account in GCP didn't have the right Roles assigned (remember the ones we assigned in Week 1). I went back into GCP and assigned these. After that, it all worked fine. Still need to investigate what's going on here.
+
+---
+
+On to the next file...
+
+```python
+# data_ingestion_localDB_dag.py
+
+import os
+from datetime import datetime
+
+from airflow import DAG
+from airflow.utils.dates import days_ago
+from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
+
+path_to_local_file = os.environ.get("AIRFLOW_HOME", "/opt/airflow/")
+dataset_file = "yellow_tripdata_2021-01.csv"
+dataset_url = f"https://s3.amazonaws.com/nyc-tlc/trip+data/{dataset_file}"
+
+default_args = {
+    "owner": "airflow",
+    "start_date": days_ago(1),
+    "depends_on_past": False,
+    "retries": 1,
+}
+
+with DAG(
+    dag_id="data_ingestion_localDB_dag",
+    schedule_interval="@daily",
+    default_args=default_args,
+    catchup=True,
+    max_active_runs=1,
+) as dag:
+
+    download_unzip_task = BashOperator(
+        task_id="download_unzip_task",
+        bash_command=f"curl -sS {dataset_url} > {path_to_local_file}/{dataset_file}"    # "&& unzip {zip_file} && rm {zip_file}"
+    )
+    #
+    # upload_to_postgres_task = PythonOperator(
+    #     task_id="upload_to_postgres_task",
+    #     python_callable=,
+    #     op_kwargs={
+    #         "source_file": f"{path_to_local_file}/{dataset_file}",
+    #         "target_file": f"raw/{{ execution_date.year }}/{{ execution_date.month }}/{dataset_file}",
+    #     },
+    # )
+    #
+    # download_unzip_task >> upload_to_gcs_task
+    #
+```
 ## Moving files from AWS to GPC with Transfer Service
 
 `Google Transfer Service` allows us to pull data from a variety of different sources to our Google Cloud Storage, and move data between these. 
