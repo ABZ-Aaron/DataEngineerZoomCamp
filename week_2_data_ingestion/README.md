@@ -307,7 +307,6 @@ Remember, DAGs are defined in Python scripts - where its structure and dependenc
 
     That's all for now. There's a lot more to cover, but hopefully this helps!
 
-
 ### Ingesting Data to GCP with Airflow
 
 To get started, create a DAG (Py file) and store in the `dags` folder.
@@ -456,6 +455,52 @@ For the above file, you'll see it in Airflow. Try running it. Basically, it will
 **ISSUES / PROBLEMS**
 
 I Haven't worked this out yet, but I was getting issues with the last two tasks. I checked the log files and identified the problem - although I don't know how it came about. I appeared that my Service Account in GCP didn't have the right Roles assigned (remember the ones we assigned in Week 1). I went back into GCP and assigned these. After that, it all worked fine. Still need to investigate what's going on here.
+
+## Ingesting Data to Local Postgres with Airflow
+
+Let's now take the `ingest_data` script from last week. We'll use Airflow to add the data to a local instance of Postgres.
+
+For the below steps, refer to the files in my directory to see what they should look like.
+
+1. First create a new folder called `dags_new` so we don't interfer with our other one.
+2. Update `docker-compose` so that `dags_new` is what appears under `volumes`.
+3. Create new dag file in our `daga_new` folder called `data_ingestion_local.py`
+5. Run `docker compose up airflow-init` then `docker compose up` to start airflow.
+6. Enter webserver via `localhost:8080` (username = airflow, password = airflow)
+7. Play around with the DAG we created.
+8. Now let's use the ingestion script from last week in airflow.
+9. Create new file `ingest_script` where we will put all the logic. Store this in `dags_new`.
+10. We can install required libraries via the requirements file. For now though, just update the Dockerfile to install these.
+11. Close our current airflow connection, and rebuild.
+12. To bring in our host name etc to the file, we can specify these in the hidden `env` file, and then specify this is the `docker-compose.yaml` file. So basically saving them as environmental variables in airflow. We can then load these environmental variables into our DAG local ingestion file.
+13. Now we need to connect YAML files (week 2 to week 1). We can do this with networks. If you run `docker compose up` then run `docker network ls`. You should see something like `airflow_network` and copy it to week one's YAML file. Basically, we're stating in that YAML file that there is a network that postgres should be a port of when it is activated (I think).
+14. Now run `docker compose us` for our first weeks stuff to run it (best to comment out pgadmin as we don't need it)
+15. Now run our pgcli command to connect to postgresql:
+
+`pgcli -h localhost -p 5432 -U root -d ny_taxi`
+
+Replace 5432 with 5431 potentially, depending on what you specified in the YAML file.
+
+**Note 1**
+
+We haven't mapped any ports for our postgresql database in our airflow YAML because we don't actually need to access it. Only airflow needs to access it.
+
+**Note 2**
+
+If you want to enter your container via command line, run:
+
+`docker exec -it <container id> bash`
+
+The container id should be the one for the airflow worker.
+
+Exit with: 
+
+`exit`
+
+16. If you connect to your container, enter python, import sqlalchemy, and try to connect to the postgresql, it should now work.
+17. Woo. We can now connect to our database located in a different docker compose file.
+18. Next we just update our scripts to create a new table for each month-year combo. This is good, in that it something fails, we can keep trying without screwing up all the previous months. We could go on to write another task for our DAG, which would join all data together in a single table each month.
+19. 
 
 ## Moving files from AWS to GPC with Transfer Service
 

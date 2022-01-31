@@ -63,8 +63,14 @@ x-airflow-common:
     GCP_PROJECT_ID: 'silent-oasis-338916'
     GCP_GCS_BUCKET: "dtc_data_lake_silent-oasis-338916"
 
+    PG_HOST: "${PG_HOST}"
+    PG_USER: "${PG_USER}"
+    PG_PASSWORD: "${PG_PASSWORD}"
+    PG_PORT: "${PG_PORT}"
+    PG_DATABASE: "${PG_DATABASE}"
+
   volumes:
-    - ./dags:/opt/airflow/dags
+    - ./dags_new:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
     - ~/.google/credentials/:/.google/credentials:ro
