@@ -137,3 +137,5 @@ week_1_basics_n_setup/terraform/terraform.tfstate
 week_1_basics_n_setup/terraform/terraform.tfstate.backup
 week_1_basics_n_setup/terraform/.terraform
 week_2_data_ingestion/airflow/google_credentials.json
+
+.DS_Store/
