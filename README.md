@@ -1,14 +1,12 @@
 # Data Engineering ZoomCamp
 
-I'm partaking in a Data Engineering [Bootcamp / Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp) and will be tracking my progress here. I can't promise these notes will be neat and tidy, but I hope they can help anyone who is working through this bootcamp. 
-
-I'll aim to document any problems or errors I come across during my journey, and describe concepts that I found tricky.
+I am partaking in a Data Engineering [Bootcamp / Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp) and will be tracking my progress here.
 
 Each week I'll work through a series of [videos](https://youtube.com/playlist?list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb) and follow this up with homework exercises.
 
 ## The Task 
 
-The goal is to develop a data pipeline following the architecture below. We will be looking at New York City Taxi data!
+The goal is to develop a data pipeline following the architecture below. We will be looking at New York City Taxi data.
 
 <img src="https://github.com/ABZ-Aaron/DataEngineerZoomCamp/blob/master/images/arch_1.jpg" width=60% height=60%>
 
@@ -31,19 +29,27 @@ We'll use a range of tools:
 
 * [Week1](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_1_basics_n_setup)
 
-  *PostgreSQL | Terraform | Docker | Google Cloud Platform*
+  **PostgreSQL | Terraform | Docker | Google Cloud Platform**
 
-  This week was a lot of setup, and a lot of work! Here I was introduced to Docker - a framework for managing containers. I created some containers for PostgreSQL and PgAdmin, before finally creating my own image, which when run, created and populated tables within my PostgreSQL database.
+  This week was a lot of setup, and a lot of work. Here we were introduced to Docker; a framework for managing containers. We created containers for PostgreSQL and PgAdmin, before finally creating our own image, which when run, created and populated tables within a PostgreSQL database.
   
-  Next up I learned a bit about Google Cloud Platform (GCP), which is suite of Google Cloud Computing resources. Here I setup a service account (more or less a user account for service running in GCP and even setup a Virtual Machine, and connected to it using SSH right from my terminal.
+  Next up we learned about Google Cloud Platform (GCP) which is a suite of Google Cloud Computing resources. Here we setup a service account (more or less a user account for services running in GCP) as well a a Virtual Machine, connecting to it using SSH via the command line.
   
-  I was also introduced to Terraform - an infrastructure-as-code tool. I used this to generate some stuff on GCP - Big Query and Google Cloud Storage - from a simple script.
+  We was also introduced to Terraform - an infrastructure-as-code tool. We used this to generate Big Query and Google Cloud Storage on GCP.
   
-  I enjoyed this week, although it was heavy going. A lot of late nights trying to understand new concepts and fix unexpected bugs. Although I'm by no means an expert in any of these tools, I do feel more confident in understanding and utilsing them. 
+  I enjoyed this week, although it was heavy going. A lot of late nights trying to understand new concepts and fix unexpected bugs related to Docker. I now feel significantly more confident in understanding and utilsing this tool.
   
 * [Week 2](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_2_data_ingestion)
 
-  This week I'm learning about Airflow!
+  **Airflow | Docker**
+
+  This week we learned about Airflow; an orchestration tool.
+  
+  Here we setup a Docker container with Airflow. We then setup a few basic DAGs. Each of these extracted CSV data from a website, converted them to parquet format, before loading them into our GCP data lake.
+  
+  This week was easier than last week, but still challenging. It feels good to understand Airflow at a basic level, and implement some of my own DAGs. The configuation with Docker was a little tricky, but I plan on spending a bit more time going through the code to understand it all.
+  
+  
 
 * Week 3: Pending...
 * Week 4: Pending...
