@@ -1,25 +1,8 @@
-""" Now create another DAG - for uploading the FHV data.
-
-We will need three steps:
-
-Donwload the data
-Parquetize it
-Upload to GCS
-If you don't have a GCP account, for local ingestion you'll need two steps:
-
-Download the data
-Ingest to Postgres
-Use the same frequency and the start date as for the yellow taxi dataset
-
-Question: how many DAG runs are green for data in 2019 after finishing everything?
-
-Note: when processing the data for 2020-01 you probably will get an error. 
-It's up to you to decide what to do with it - for Week 3 homework we won't need 2020 data. """
-
 import os
 import logging
 
 from airflow import DAG
+from airflow.utils.dates import days_ago
 
 # Our airflow operators
 from airflow.operators.bash import BashOperator
@@ -28,33 +11,27 @@ from airflow.operators.python import PythonOperator
 # Helps us to interact with GCP Storage
 from google.cloud import storage
 
-from datetime import datetime
-
+# To allow us to interact with BigQuery
 from airflow.providers.google.cloud.operators.bigquery import BigQueryCreateExternalTableOperator
 
 # Helps to convert our data to parquet format
 import pyarrow.csv as pv
 import pyarrow.parquet as pq
 
+from datetime import datetime
+
 # Take environmental variables into local variables. These were set in the docker-compose setup.
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 BUCKET = os.environ.get("GCP_GCS_BUCKET")
 
-BIGQUERY_DATASET = os.environ.get("BIGQUERY_DATASET", "trips_data_all")
-
-current_month_year = "{{ execution_date.strftime(\'%Y-%m\') }}"
-if "2020" in current_month_year:
-    dataset_file = "fhvhv_tripdata_{{ execution_date.strftime(\'%Y-%m\') }}.csv"
-else:
-    dataset_file = "fhv_tripdata_{{ execution_date.strftime(\'%Y-%m\') }}.csv"
-
-dataset_url_prefix = "https://nyc-tlc.s3.amazonaws.com/trip+data"
+dataset_file = "yellow_tripdata_{{ execution_date.strftime(\'%Y-%m\') }}.csv"
+dataset_url_prefix = "https://s3.amazonaws.com/nyc-tlc/trip+data"
 dataset_url = dataset_url_prefix + "/" + dataset_file
 path_to_local_home = os.environ.get("AIRFLOW_HOME", "/opt/airflow/")
 parquet_file = dataset_file.replace('.csv', '.parquet')
 output_file_template = path_to_local_home + "/output_{{ execution_date.strftime(\'%Y-%m\') }}.csv"
 
-# BIGQUERY_DATASET = os.environ.get("BIGQUERY_DATASET", "trips_data_all")
+BIGQUERY_DATASET = os.environ.get("BIGQUERY_DATASET", "trips_data_all")
 
 def format_to_parquet(src_file):
     if not src_file.endswith('.csv'):
@@ -93,13 +70,13 @@ default_args = {
 }
 
 with DAG(
-    dag_id="data_ingestion_gcs_dag_fhv",
+    dag_id="data_ingestion_gcs_dag_v02",
     schedule_interval="@monthly",
     default_args=default_args,
     start_date=datetime(2019, 1, 1),
     catchup=True,
     max_active_runs=3,
-    tags=['Homework DAG FHV'],
+    tags=['Homework DAG Week 2'],
 ) as dag:
 
     download_dataset_task = BashOperator(
@@ -126,19 +103,19 @@ with DAG(
         },
     )
 
-    bigquery_external_table_task = BigQueryCreateExternalTableOperator(
+    """bigquery_external_table_task = BigQueryCreateExternalTableOperator(
         task_id="bigquery_external_table_task",
         table_resource={
             "tableReference": {
                 "projectId": PROJECT_ID,
                 "datasetId": BIGQUERY_DATASET,
-                "tableId": "external_table_fhv",
+                "tableId": "external_table",
             },
             "externalDataConfiguration": {
                 "sourceFormat": "PARQUET",
                 "sourceUris": [f"gs://{BUCKET}/raw/{parquet_file}"],
             },
         },
-    )
+    )"""
 
-    download_dataset_task >> format_to_parquet_task >> local_to_gcs_task >> bigquery_external_table_task
+    download_dataset_task >> format_to_parquet_task >> local_to_gcs_task

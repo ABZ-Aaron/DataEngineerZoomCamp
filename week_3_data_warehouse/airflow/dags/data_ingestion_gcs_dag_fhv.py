@@ -99,10 +99,10 @@ with DAG(
     start_date=datetime(2019, 1, 1),
     catchup=True,
     max_active_runs=3,
-    tags=['Homework DAG FHV'],
+    tags=['Homework DAG FHV Week 3'],
 ) as dag:
 
-    download_dataset_task = BashOperator(
+    """download_dataset_task = BashOperator(
         task_id="download_dataset_task",
         bash_command=f"curl -sS {dataset_url} > {path_to_local_home}/{dataset_file}"
     )
@@ -113,9 +113,9 @@ with DAG(
         op_kwargs={
             "src_file": f"{path_to_local_home}/{dataset_file}",
         },
-    )
+    )"""
 
-    # TODO: Homework - research and try XCOM to communicate output values between 2 tasks/operators
+    """# TODO: Homework - research and try XCOM to communicate output values between 2 tasks/operators
     local_to_gcs_task = PythonOperator(
         task_id="local_to_gcs_task",
         python_callable=upload_to_gcs,
@@ -124,7 +124,7 @@ with DAG(
             "object_name": f"raw/{parquet_file}",
             "local_file": f"{path_to_local_home}/{parquet_file}",
         },
-    )
+    )"""
 
     bigquery_external_table_task = BigQueryCreateExternalTableOperator(
         task_id="bigquery_external_table_task",
