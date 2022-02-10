@@ -49,10 +49,22 @@ We'll use a range of tools:
   
   This week was easier than last week, but still challenging. It feels good to understand Airflow at a basic level, and implement some of my own DAGs. The configuation with Docker was a little tricky, but I plan on spending a bit more time going through the code to understand it all.
   
-  
+* [Week 3](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_3_data_warehouse)
 
-* Week 3: Pending...
-* Week 4: Pending...
+  **BigQuery**
+
+  This week was focused on Data Warehousing, specifically BigQuery.
+
+  This was a more relaxed week. Not as much to take in, giving me a chance to catch up. It mostly consisted of BigQuery basics, ingesting more data into it, and playing around with partitioning and clustering. 
+
+  I don't feel like I learned as much this week, and have made a note to spend more time on Data Warehousing and Dimensional Modeling in my own time.
+ 
+* [Week 4](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_4_analytics_engineering)
+
+  **DBT**
+
+  This week we're looking at DBT!
+
 * Week 5: Pending...
 * Week 6: Pending...
 
