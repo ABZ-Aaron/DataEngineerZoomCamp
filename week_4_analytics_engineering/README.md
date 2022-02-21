@@ -112,7 +112,7 @@ Next, we'll need to set DBT up using BigQuery.
 
     First we create some credentials for accessing BigQuery via DBT. These credentials are stored in a JSON, and act a bit like a password/email combo for BigQuery.
 
-    We then create our DBT account and project, and link it to BigQuery and our Github Repo.
+    We then create our DBT account and project, and link it to BigQuery and our Github Repo. I'm actually going to use a separate GitHub Repo for this.
 
 # Introduction to Analytics Engineering
 
@@ -189,3 +189,156 @@ Our project will have trip data (which we've loaded into BigQuery). We'll add a 
 
 ## Create DBT project
 
+Useful to note that DBT provides us with a starter project, which provides basic folders and files we will need.
+
+Here I'll document the step I take to starting a project in DBT Cloud.
+
+1. Upon entering the project in the DBT, because we've linked it up with Github, I can see my Data Engineering ZoomCamp file and folders within the cloud IDE. Note that I actually created a separate repo for [this](https://github.com/ABZ-Aaron/ny_taxi_rides_zoomcamp).
+
+2. Click "Initialize your project" (big green button)
+
+3. Follow the instructions [here](https://www.youtube.com/watch?v=UVI30Vxzd6c&list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb&index=38).
+
+### Materialization
+
+Read an overview of this [here](https://docs.getdbt.com/docs/building-a-dbt-project/building-models/materializations).
+
+Materialization strategies are:
+
+1. Table
+
+    Drop table if exists in Data Warehouse, and create table in schema we are working with
+
+1. View
+
+    Create or alter view with our schema
+
+1. Incremental
+
+    Run our model incrementally
+
+1. Ephemeral
+
+    Derived model
+
+### The FROM clause of a DBT Model
+
+We want to use sources that we loaded from green and yellow trip data. For this we will use a macro called `sources`.
+
+Here we can define however many sources as we want. The macro will resolve the name for us with the right schema, and build dependencies automatically. 
+
+We can also load data from CSV files (this is called `seeds`). It's basically just a copy command. These CSV files will be stored in our repo under seed folder.
+
+This is recommended for data that doesn't change frequently. Runs with `dbt seed -s file_name`. 
+
+The `Ref` macro references the underlying tables and views that were building the data warehouse. Here dependencies are built automatically. 
+
+## Errors when working with DBT
+
+One issues I came across was that when trying to run DBT, I would get an error telling me that dataset could not be found in the US region. 
+
+I think this was due my BigQuery being based in Europe. I went to Profile > Credentials > [big query project] and changed `dataset` value from `dbt_aaron` to `trips_data_all`. 
+
+Need to investigate this further so I understand better. The `dbt_aaron` was set to US. I think perhaps this and the dataset we're taking data from both need to be in the same location. So by just setting my output location to trips_data_all it worked, although ideally I would just set that location to US as well (although the process for this is longer).
+
+## Macros
+
+These are like functions we write in Jinja. 
+
+These macros return code. So rather than concatenating A and B (if that's what we want our function to do) it will actually return the code used to concat A & B, rather than do the concat itself.
+
+This is helpful if we want to maintain same kind of transformation for different models.
+
+To define it, we create files under the macros folder, using a combo of SQL and Jinja. 
+
+* {# #} - comment block
+
+* {% %} - Execute something
+
+Note, we can see compiled code under the `target` folder.
+
+So we can create our own macros. Or, we can import macros from other projects if we like using `packages`. By adding these packages, we can use their models and macros.
+
+We just need to create a `packages.yml` and ad the relevant packages we want there. We then run `dbt deps` to install the packages specified here.
+
+## Variables
+
+Same concept as any other programming language. Means we can use variables across project, and translate during compilation time.
+
+Global variables can be defined under the `project.yml` or they can be defined in the terminal
+
+## DBT Seeds
+
+For this part, we're just going to create a file `taxi_zone_lookup.csv` and copy from original file. This is the simplest for our purposes.
+
+Under the `dbt_project.yml` we can actually add what column types we want for this csv. Columns we don't define here will just use the default type.
+
+## DBT Run
+
+When we run `dim run`, we'll run everything, except the seed. If we want to run the seeds too, we can run `dim build`.
+
+If we run something like `dbt run --select fact_trips` this would only run the fact_trips model.
+
+If we run something like `dbt run --select +fact_trips` this will run everything that fact_trips needs.
+
+## Testing & Documenting DBT Models
+
+This is not required. However, it is recommended. 
+
+A test is an assumption that we make about our data (a behavior it should have).
+
+Tests are essentially `select` statement. 
+
+Tests are defined in a `yml` file. We can define tests here such as `Unique`, `Not NUll`, `Accepted Values`, or `A foreign key to another table`. These are run for the columns we specified. 
+
+We can also create our own custom tests.
+
+With DBT we have documentation, which is rendered as a website. Documentation includes model code, model dependencies, sources, etc. It will also add info about data warehouse.
+
+For tests, we can define these is our `schema.yml` under our staging area.
+
+## Deployment
+
+This is the process of running the models we created in our development environment in a production environment.
+
+We should be able to test our models without affecting production environment. 
+
+A deployment environment will normally have a different schema in our DW and a different user.
+
+The workflow is like:
+
+- Develop in a user branch
+- Open a PR to merge into main branch
+- Merge branch to main branch
+- Run the new models in the production environment using the main branch
+- Schedule the models
+
+## Running a DBT project in production
+
+DBT cloud includes a scheduler where to create jobs to run in production. A single job can run multiple commands. These jobs can be run manually or on schedule. 
+
+Each job will keep a log of runs over time. Each run will have logs for each command. A job can also generate documentation that could be viewed under the run information. 
+
+If DBT source freshness was run, the results can also be viewed at the end of the job.
+
+## What is continuous integration (CI)?
+
+CI is the practice of regularly merging development branches into a central repo where automated builds and tests are run. 
+
+The goal is to reduce adding bugs to the production code and maintain a more stable project.
+
+DBT enables us to allow CI on pull requests, which is enabled via webhooks from GitHub where we are hosting our repo.
+
+When a PR is ready to be merged, a webhook is received in DBT cloud from Github that will enqueue a new run of the specified job.
+
+The run of the CI job will be against a temporary schema. 
+
+No PR will be able to be merged unless the run has been completely successfully. 
+
+## Example
+
+Once we commit. Our changes will be seen in our Github repo.
+
+Afterwards, we will need to create a new branch to work from in DBT. The main branch will be protected. By working on a separate branch, we ensure we are not working on a live production environment.
+
+When we set this up, we specify a new dataset where we store the tables etc in BigQuery. I called this production.
