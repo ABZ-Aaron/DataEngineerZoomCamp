@@ -342,3 +342,5 @@ Once we commit. Our changes will be seen in our Github repo.
 Afterwards, we will need to create a new branch to work from in DBT. The main branch will be protected. By working on a separate branch, we ensure we are not working on a live production environment.
 
 When we set this up, we specify a new dataset where we store the tables etc in BigQuery. I called this production.
+
+
