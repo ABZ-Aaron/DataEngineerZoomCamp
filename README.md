@@ -31,7 +31,7 @@ We'll use a range of tools:
 
   **PostgreSQL | Terraform | Docker | Google Cloud Platform**
 
-  This week was a lot of setup, and a lot of work. Here we were introduced to Docker; a framework for managing containers. We created containers for PostgreSQL and PgAdmin, before finally creating our own image, which when run, created and populated tables within a PostgreSQL database.
+  This week we were introduced to Docker; a framework for managing containers. We created containers for PostgreSQL and PgAdmin, before finally creating our own image, which when run, created and populated tables within a PostgreSQL database.
   
   Next up we learned about Google Cloud Platform (GCP) which is a suite of Google Cloud Computing resources. Here we setup a service account (more or less a user account for services running in GCP) as well a a Virtual Machine, connecting to it using SSH via the command line.
   
@@ -61,10 +61,27 @@ We'll use a range of tools:
  
 * [Week 4](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_4_analytics_engineering)
 
-  **DBT**
+  **DBT | Google Data Studio**
 
-  This week we're looking at DBT!
+  This week we looked into DBT and Analytics Engineering.
 
-* Week 5: Pending...
-* Week 6: Pending...
+  We learned that DBT sits on top of data warehouses and can be used to develop pipelines using SELECT statements, as well as test and document our models.
+
+  Most of the week was spent writing some DBT models, before eventually pushing this to production. 
+
+  We also gained some exposure to Google Data Studio, which we used to generate a simple dashboard.
+
+  This was an interesting week, and was good to see what a more modern data stack might look like.
+
+* [Week 5](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/blob/master/week_5_batch_processing)
+
+  **Spark | Batch Processing**
+
+  pending...
+
+* [Week 6](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/blob/master/week_6_stream_processing)
+
+  **Kafka | Stream Processing**
+
+  pending...
 
