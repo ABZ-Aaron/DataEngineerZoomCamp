@@ -51,8 +51,6 @@ I tested it worked by typing `spark-shell` in the command window.
 For PySpark, I ran `pip install pyspark` then tested by just typing `pyspark` into the command window. If all that fails, take a look (here)[https://github.com/DataTalksClub/data-engineering-zoomcamp/blob/main/week_5_batch_processing/setup/pyspark.md].
 
 I had also previously installed Java (version 17.0.2) although can't recall the exact way I had installed it.
-
-<<<<<<< HEAD
 ## Learning Spark
 
 Apache Spark is a unified engine designed for large scale distributed processing, in data centers or in the cloud.
@@ -110,10 +108,3 @@ A spark application consists of a:
     Data is distributed across storage as partitions residing in either HDFS or cloud storage. While the data is distributed as partitions across the physical cluster, Spark treats each partition as a DataFrame in memory.
 
     This partitioning allows for efficient parallelism. It allows executors to process the data that is close to them, minimizing network bandwidth.
-
-
-
-
-
-=======
->>>>>>> 9ce05329266fa55778fb09074bd8dc30cffbfded
