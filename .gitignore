@@ -125,7 +125,7 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
+# Pyre type checke
 .pyre/
 
 # Folders and files I've created
@@ -141,3 +141,6 @@ week_2_data_ingestion/airflow/google_credentials.json
 .DS_Store/
 
 week_5_batch_processing/01_code
+week_5_batch_processing/homework/fhvhv
+week_5_batch_processing/homework/fhvhv_tripdata_2021-02.csv
+week_5_batch_processing/homework/taxi+_zone_lookup.csv

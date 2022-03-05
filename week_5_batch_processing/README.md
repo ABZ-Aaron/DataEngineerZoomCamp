@@ -108,3 +108,37 @@ A spark application consists of a:
     Data is distributed across storage as partitions residing in either HDFS or cloud storage. While the data is distributed as partitions across the physical cluster, Spark treats each partition as a DataFrame in memory.
 
     This partitioning allows for efficient parallelism. It allows executors to process the data that is close to them, minimizing network bandwidth.
+
+## Downloading Green & Yellow Taxi Data
+
+For this, to be consistent with what tutor has, I downloaded a couple of scripts:
+
+```bash
+wget https://raw.githubusercontent.com/DataTalksClub/data-engineering-zoomcamp/main/week_5_batch_processing/code/05_taxi_schema.ipynb
+```
+
+```bash
+wget https://raw.githubusercontent.com/DataTalksClub/data-engineering-zoomcamp/main/week_5_batch_processing/code/download_data.sh
+```
+
+Then ran the bash script to download the data:
+
+```bash
+bash download_data.sh yellow 2020
+bash download_data.sh yellow 2021
+bash download_data.sh green 2020
+bash download_data.sh green 2021
+```
+
+And then went through the jupyter notebook script to set a schema and save the files as parquet.
+
+bash download_data.sh yellow 2021
+bash download_data.sh green 2020
+bash download_data.sh green 2021
+
+## Spark Internals
+
+In our local setup, we set up a local cluster e.g. `master('local[*]')`.
+
+Our Spark code we submit to Spark Master, which might be a single machine in a cluster. Within that cluster, we may also have a number of executors which receive instructions from master and execute the tasks.
+
