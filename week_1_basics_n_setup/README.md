@@ -18,13 +18,13 @@ This week we'll be cover basics with the following:
 
   A Dockerfile is a text document. It contains all the commands one could call on the command line to create a Docker image. In other words, Docker can build images automatically by reading instructions from a Dockerfile.
 
-  But wait... what's a Docker image?
+## What's a Docker image?
 
-  Think of this like a blueprint... a blueprint for creating Docker container. A container is a lightweight, standalone, executable package of software which includes everything needed to run an application)
+  Think of this like a blueprint... a blueprint for creating Docker container. A container is a lightweight, standalone, executable package of software which includes everything needed to run an application.
 
   As of right now, our Dockerfile will specify a `parent image` (in this case, Python) which all subsequent commands will be based on. The Dockerfile specifies certain Python packages that'll be installed. It also copies a Python pipeline file (see next step) to the filesystem of the container. Additionally, it will run this file upon creation of the container.
 
-2. Next up, we created a `pipeline.py` file which will be run when we run our image to generate a container, at least for now.
+2. Next up, we created a `pipeline.py` file which will be run when we run our image to generate a container.
 
 3. I then setup a python virtual environment and pip installed `pgcli` in my main directory. This is a command line interface for Postgres.
 
