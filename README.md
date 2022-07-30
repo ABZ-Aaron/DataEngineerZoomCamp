@@ -4,7 +4,7 @@ I completed a Data Engineering [Bootcamp / Zoomcamp](https://github.com/DataTalk
 
 Each week I worked through a series of [videos](https://youtube.com/playlist?list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb) and followed this up with homework exercises.
 
-See my final project [here](https://github.com/ABZ-Aaron/Reddit-API-Pipeline). I've condensed much of my learning from the bootcamp into this project, documenting the step I took.
+See my final project [here](https://github.com/ABZ-Aaron/Reddit-API-Pipeline). I've condensed much of my learning from the bootcamp into this project, documenting the steps I took.
 
 ## The Task 
 
