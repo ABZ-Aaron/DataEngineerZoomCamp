@@ -1,20 +1,20 @@
 # Data Engineering ZoomCamp
 
-I am partaking in a Data Engineering [Bootcamp / Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp) and will be tracking my progress here.
+I completed a Data Engineering [Bootcamp / Zoomcamp](https://github.com/DataTalksClub/data-engineering-zoomcamp) and tracked some of my progress here with some rough notes.
 
-Each week I'll work through a series of [videos](https://youtube.com/playlist?list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb) and follow this up with homework exercises.
+Each week I worked through a series of [videos](https://youtube.com/playlist?list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb) and followed this up with homework exercises.
 
-See my final project [here](https://github.com/ABZ-Aaron/Reddit-API-Pipeline).
+See my final project [here](https://github.com/ABZ-Aaron/Reddit-API-Pipeline). I've condensed much of my learning from the bootcamp into this project, documenting the step I took.
 
 ## The Task 
 
-The goal is to develop a data pipeline following the architecture below. We will be looking at New York City Taxi data.
+The goal is to develop a data pipeline following the architecture below. We looked at New York City Taxi data.
 
 <img src="https://github.com/ABZ-Aaron/DataEngineerZoomCamp/blob/master/images/arch_1.jpg" width=60% height=60%>
 
 ## Tools
 
-We'll use a range of tools:
+We used a range of tools:
 
 * [Google Cloud Platform (GCP)](https://cloud.google.com): Cloud-based auto-scaling platform by Google
 * [Google Cloud Storage (GCS)](https://cloud.google.com/learn/what-is-a-data-lake): Data Lake
