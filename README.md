@@ -27,6 +27,10 @@ We'll use a range of tools:
 * [Spark](https://spark.apache.org): Distributed Processing
 * [Kafka](https://kafka.apache.org): Streaming
 
+## Final Project
+
+See my final project [here](https://github.com/ABZ-Aaron/Reddit-API-Pipeline).
+
 ## Progress
 
 * [Week1](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_1_basics_n_setup)
